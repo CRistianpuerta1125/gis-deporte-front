@@ -1,122 +1,145 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, useMemo } from 'react';
+import { Header } from './components/Header';
+import { InteractiveMap } from './components/InteractiveMap';
+import { FilterPanel } from './components/FilterPanel';
+import { Dashboard } from './components/Dashboard';
+import { BookingModal } from './components/BookingModal';
+import { MOCK_VENUES } from './data/mockVenues';
+import type { Venue } from './types/gis';
 
-function App() {
-  const [count, setCount] = useState(0)
+export function App() {
+  const [activeTab, setActiveTab] = useState<'map' | 'dashboard'>('map');
+  const [userRole, setUserRole] = useState<'CITIZEN' | 'INSTRUCTOR' | 'ADMIN'>('CITIZEN');
+
+  const [selectedLocality, setSelectedLocality] = useState('Todas las localidades');
+  const [selectedDiscipline, setSelectedDiscipline] = useState('Todas las disciplinas');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isNearbyActive, setIsNearbyActive] = useState(false);
+
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [bookingVenue, setBookingVenue] = useState<Venue | null>(null);
+
+  const filteredVenues = useMemo(() => {
+    return MOCK_VENUES.filter((venue) => {
+      if (selectedLocality !== 'Todas las localidades' && venue.locality !== selectedLocality) {
+        return false;
+      }
+      if (
+        searchQuery &&
+        !venue.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !venue.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !venue.locality.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [selectedLocality, searchQuery]);
+
+  const handleNearbyClick = () => {
+    setIsNearbyActive(!isNearbyActive);
+    if (!isNearbyActive) {
+      setSelectedLocality('Teusaquillo');
+    } else {
+      setSelectedLocality('Todas las localidades');
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Header
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        userRole={userRole}
+        onRoleChange={setUserRole}
+      />
+
+      {activeTab === 'map' ? (
+        <main
+          style={{
+            flex: 1,
+            display: 'grid',
+            gridTemplateColumns: 'minmax(280px, 340px) 1fr',
+            gap: '16px',
+            padding: '16px',
+            height: 'calc(100vh - 70px)',
+          }}
         >
-          Count is {count}
-        </button>
-      </section>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            <FilterPanel
+              selectedLocality={selectedLocality}
+              onLocalityChange={setSelectedLocality}
+              selectedDiscipline={selectedDiscipline}
+              onDisciplineChange={setSelectedDiscipline}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onNearbyClick={handleNearbyClick}
+              isNearbyActive={isNearbyActive}
+            />
 
-      <div className="ticks"></div>
+            <div
+              style={{
+                background: '#1e293b',
+                border: '1px solid #334155',
+                borderRadius: '12px',
+                padding: '16px',
+                flex: 1,
+                overflowY: 'auto',
+              }}
+            >
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#38bdf8' }}>
+                Escenarios Encontrados ({filteredVenues.length})
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {filteredVenues.map((venue) => (
+                  <div
+                    key={venue.id}
+                    onClick={() => setSelectedVenue(venue)}
+                    style={{
+                      background: selectedVenue?.id === venue.id ? '#0369a1' : '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <h5 style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#f8fafc' }}>
+                      {venue.name}
+                    </h5>
+                    <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>
+                      📍 {venue.locality} - {venue.address}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          <div style={{ borderRadius: '12px', overflow: 'hidden', height: '100%' }}>
+            <InteractiveMap
+              venues={filteredVenues}
+              selectedVenue={selectedVenue}
+              onSelectVenue={setSelectedVenue}
+              onBookVenue={setBookingVenue}
+            />
+          </div>
+        </main>
+      ) : (
+        <main style={{ flex: 1 }}>
+          <Dashboard
+            venues={filteredVenues}
+            userRole={userRole}
+            onBookVenue={setBookingVenue}
+          />
+        </main>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {bookingVenue && (
+        <BookingModal venue={bookingVenue} onClose={() => setBookingVenue(null)} />
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
